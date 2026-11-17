@@ -1,5 +1,5 @@
-
 import json
+import os
 import platform
 import sys
 from datetime import datetime
@@ -45,12 +45,36 @@ def generate_executor_file() -> None:
         "%d/%m/%Y %H:%M:%S"
     )
 
-    executor = {
-        "name": "Local Windows",
-        "type": "local",
-        "buildName": f"Enterprise QA Automation - {execution_time}",
-        "reportName": "Enterprise QA Automation - Allure Report",
-    }
+    is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+
+    if is_github_actions:
+        workflow = os.getenv(
+            "GITHUB_WORKFLOW",
+            "Enterprise QA Automation",
+        )
+        run_number = os.getenv("GITHUB_RUN_NUMBER", "")
+        run_id = os.getenv("GITHUB_RUN_ID", "")
+        repository = os.getenv("GITHUB_REPOSITORY", "")
+        server_url = os.getenv("GITHUB_SERVER_URL", "https://github.com")
+
+        executor = {
+            "name": "GitHub Actions",
+            "type": "github",
+            "buildName": f"{workflow} - Run #{run_number}",
+            "buildOrder": int(run_number),
+            "buildUrl": (
+                f"{server_url}/{repository}/actions/runs/{run_id}"
+            ),
+            "reportName": "Enterprise QA Automation - Allure Report",
+        }
+
+    else:
+        executor = {
+            "name": "Local Windows",
+            "type": "local",
+            "buildName": f"Enterprise QA Automation - {execution_time}",
+            "reportName": "Enterprise QA Automation - Allure Report",
+        }
 
     executor_file = results_dir / "executor.json"
 
@@ -58,4 +82,3 @@ def generate_executor_file() -> None:
         json.dumps(executor, indent=4, ensure_ascii=False),
         encoding="utf-8",
     )
-
